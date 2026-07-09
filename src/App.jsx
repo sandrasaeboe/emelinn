@@ -78,11 +78,31 @@ const LOOPED_PIECES = [0, 1, 2].flatMap((loop) =>
 function Work() {
   const stripRef = useRef(null);
   const setWidthRef = useRef(0);
+  const activeRef = useRef(null);
+  const tickingRef = useRef(false);
 
   useEffect(() => {
     const el = stripRef.current;
     if (!el) return;
     const perSet = PIECES.length;
+
+    const updateActive = () => {
+      const stripRect = el.getBoundingClientRect();
+      const centerX = stripRect.left + stripRect.width / 2;
+      const cards = el.querySelectorAll('.work__card');
+      let closest = null;
+      let closestDist = Infinity;
+      cards.forEach((c) => {
+        const r = c.getBoundingClientRect();
+        const dist = Math.abs(r.left + r.width / 2 - centerX);
+        if (dist < closestDist) { closestDist = dist; closest = c; }
+      });
+      if (closest && closest !== activeRef.current) {
+        if (activeRef.current) activeRef.current.classList.remove('is-active');
+        closest.classList.add('is-active');
+        activeRef.current = closest;
+      }
+    };
 
     const center = () => {
       const cards = el.querySelectorAll('.work__card');
@@ -90,17 +110,24 @@ function Work() {
       const setWidth = cards[perSet].offsetLeft - cards[0].offsetLeft;
       if (!setWidth) return;
       setWidthRef.current = setWidth;
-      el.scrollLeft = setWidth;
+      const target = cards[perSet];
+      el.scrollLeft = target.offsetLeft + target.offsetWidth / 2 - el.clientWidth / 2;
+      updateActive();
     };
     center();
 
     const onScroll = () => {
       const setWidth = setWidthRef.current;
-      if (!setWidth) return;
-      if (el.scrollLeft < setWidth) {
-        el.scrollLeft += setWidth;
-      } else if (el.scrollLeft >= setWidth * 2) {
-        el.scrollLeft -= setWidth;
+      if (setWidth) {
+        if (el.scrollLeft < setWidth) {
+          el.scrollLeft += setWidth;
+        } else if (el.scrollLeft >= setWidth * 2) {
+          el.scrollLeft -= setWidth;
+        }
+      }
+      if (!tickingRef.current) {
+        tickingRef.current = true;
+        requestAnimationFrame(() => { updateActive(); tickingRef.current = false; });
       }
     };
 

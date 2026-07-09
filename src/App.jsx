@@ -79,7 +79,6 @@ function Work() {
   const stripRef = useRef(null);
   const setWidthRef = useRef(0);
   const activeRef = useRef(null);
-  const tickingRef = useRef(false);
   const metricsRef = useRef({ step: 0, firstCenter: 0, clientWidth: 0 });
 
   useEffect(() => {
@@ -136,10 +135,7 @@ function Work() {
           el.scrollLeft -= setWidth;
         }
       }
-      if (!tickingRef.current) {
-        tickingRef.current = true;
-        requestAnimationFrame(() => { updateActive(); tickingRef.current = false; });
-      }
+      updateActive();
     };
 
     el.addEventListener('scroll', onScroll, { passive: true });

@@ -80,37 +80,48 @@ function Work() {
   const setWidthRef = useRef(0);
   const activeRef = useRef(null);
   const tickingRef = useRef(false);
+  const metricsRef = useRef({ step: 0, firstCenter: 0, clientWidth: 0 });
 
   useEffect(() => {
     const el = stripRef.current;
     if (!el) return;
     const perSet = PIECES.length;
 
+    // cache layout metrics once (on mount/resize) so the scroll handler
+    // never has to force a reflow with getBoundingClientRect/offsetLeft
+    const measure = () => {
+      const cards = el.children;
+      if (cards.length < perSet * 2) return 0;
+      const c0 = cards[0];
+      const step = cards[1].offsetLeft - c0.offsetLeft;
+      const firstCenter = c0.offsetLeft + c0.offsetWidth / 2;
+      const setWidth = cards[perSet].offsetLeft - c0.offsetLeft;
+      metricsRef.current = { step, firstCenter, clientWidth: el.clientWidth };
+      setWidthRef.current = setWidth;
+      return setWidth;
+    };
+
+    const setActive = (idx) => {
+      const cards = el.children;
+      const target = cards[idx];
+      if (!target || target === activeRef.current) return;
+      if (activeRef.current) activeRef.current.classList.remove('is-active');
+      target.classList.add('is-active');
+      activeRef.current = target;
+    };
+
     const updateActive = () => {
-      const stripRect = el.getBoundingClientRect();
-      const centerX = stripRect.left + stripRect.width / 2;
-      const cards = el.querySelectorAll('.work__card');
-      let closest = null;
-      let closestDist = Infinity;
-      cards.forEach((c) => {
-        const r = c.getBoundingClientRect();
-        const dist = Math.abs(r.left + r.width / 2 - centerX);
-        if (dist < closestDist) { closestDist = dist; closest = c; }
-      });
-      if (closest && closest !== activeRef.current) {
-        if (activeRef.current) activeRef.current.classList.remove('is-active');
-        closest.classList.add('is-active');
-        activeRef.current = closest;
-      }
+      const { step, firstCenter, clientWidth } = metricsRef.current;
+      if (!step) return;
+      const centerX = el.scrollLeft + clientWidth / 2;
+      const idx = Math.round((centerX - firstCenter) / step);
+      setActive(Math.max(0, Math.min(el.children.length - 1, idx)));
     };
 
     const center = () => {
-      const cards = el.querySelectorAll('.work__card');
-      if (cards.length < perSet * 2) return;
-      const setWidth = cards[perSet].offsetLeft - cards[0].offsetLeft;
+      const setWidth = measure();
       if (!setWidth) return;
-      setWidthRef.current = setWidth;
-      const target = cards[perSet];
+      const target = el.children[perSet];
       el.scrollLeft = target.offsetLeft + target.offsetWidth / 2 - el.clientWidth / 2;
       updateActive();
     };

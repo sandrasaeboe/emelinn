@@ -51,7 +51,7 @@ function Hero() {
 
       <div className="hero__bottom">
         <p className="hero__lede">
-          Text som beskriver kort evt stil etc.
+          Fine-line tattoos in Stockholm.
           By appointment only.
         </p>
         <a href="#book" className="link-arrow">How to book <i>→</i></a>
